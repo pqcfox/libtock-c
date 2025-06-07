@@ -14,14 +14,15 @@
 #define VALID_ENCRYPTION_APP       1
 #define COMPROMISED_ENCRYPTION_APP 2
 
-const char VALID_ENCRYPTION_SERVICE[]       = "org.tockos.tutorials.attestation.valid";
-const char COMPROMISED_ENCRYPTION_SERVICE[] = "org.tockos.tutorials.attestation.compromised";
+const char VALID_ENCRYPTION_SERVICE_NAME[]       = "org.tockos.tutorials.attestation.valid";
+const char COMPROMISED_ENCRYPTION_SERVICE_NAME[] = "org.tockos.tutorials.attestation.compromised";
 
 u8g2_t u8g2;
 mui_t ui;
-bool action              = false;
-uint8_t app_choice       = 0;
-size_t app_start_service = -1;
+
+bool    action            = false;
+uint8_t app_choice        = 0;
+size_t  app_start_service = -1;
 
 static uint8_t mui_hrule(mui_t* mui, uint8_t msg) {
   switch (msg) {
@@ -48,9 +49,9 @@ fds_t* fds =
   MUI_LABEL(8, 10, "Tock Attestation Demo")
   MUI_XY("HR", 0, 12)
   MUI_STYLE(1)
-  MUI_LABEL(5, 25, "App: ")
-  MUI_XYAT("RB", 30, 25, 1, "Valid")
-  MUI_XYAT("RB", 30, 40, 2, "Compromised")
+  MUI_LABEL(5, 25, "State: ")
+  MUI_XYAT("RB", 40, 25, 1, "Valid")
+  MUI_XYAT("RB", 40, 40, 2, "Compromised")
   MUI_XYT("ST", 63, 58, " Start ")
 ;
 
@@ -59,7 +60,7 @@ static void button_callback(
   int                                   btn_num,
   bool                                  val) {
 
-  // Hnadle button presses, routing them to the menu UI library.
+  // Handle button presses, routing them to the menu UI library.
   if (val) {
     if (btn_num == 0) {
       mui_PrevField(&ui);
@@ -70,6 +71,22 @@ static void button_callback(
     }
     action = true;
   }
+}
+
+static void ipc_callback(__attribute__ ((unused)) int pid,
+                         int len, 
+                         int buf,
+                         __attribute__ ((unused)) void* ud) {
+
+  // Prepare a null-terminated C string with the buffer contents.
+  uint8_t *c_str = malloc(len + 1);
+  memcpy(c_str, (uint8_t *)buf, len);
+  c_str[len] = '\0';
+
+  // Draw the string on the screen.
+  u8g2_ClearBuffer(&u8g2);
+  u8g2_DrawStr(&u8g2, 20, 20, (const char *)c_str);
+  u8g2_SendBuffer(&u8g2);
 }
 
 int enable_interrupts(void) {
@@ -133,6 +150,10 @@ int start_encryption_app(const char* service) {
     return ret;
   }
 
+  // Register a callback so that the app can log to screen.
+  ipc_register_service_callback("org.tockos.tutorials.attestation.screen", ipc_callback,
+                                NULL);
+
   // Notify it so the correct encryption app can start.
   ret = ipc_notify_service(app_start_service);
   if (ret != RETURNCODE_SUCCESS) {
@@ -142,7 +163,6 @@ int start_encryption_app(const char* service) {
 
   return 0;
 }
-
 
 int main(void) {
   returncode_t ret;
@@ -155,19 +175,21 @@ int main(void) {
   while (app_choice == NO_SELECTED_APP) {
     ret = prompt_for_app_choice();
     if (ret != RETURNCODE_SUCCESS) return ret;
+  }
 
-    // Based on the app choice, notify the proper app over IPC.
-    switch (app_choice) {
-      case VALID_ENCRYPTION_APP:
-        printf("Starting valid service...");
-        ret = start_encryption_app(VALID_ENCRYPTION_SERVICE);
-        break;
-      case COMPROMISED_ENCRYPTION_APP:
-        printf("Starting compromised service...");
-        ret = start_encryption_app(COMPROMISED_ENCRYPTION_SERVICE);
-        break;
-    }
-    if (ret != RETURNCODE_SUCCESS) return ret;
+  // Clear the screen so that the app has a fresh start.
+  u8g2_ClearBuffer(&u8g2);
+  
+  // Based on the app choice, notify the proper app over IPC.
+  switch (app_choice) {
+    case VALID_ENCRYPTION_APP:
+      printf("Starting valid service...\n");
+      ret = start_encryption_app(VALID_ENCRYPTION_SERVICE_NAME);
+      break;
+    case COMPROMISED_ENCRYPTION_APP:
+      printf("Starting compromised service...\n");
+      ret = start_encryption_app(COMPROMISED_ENCRYPTION_SERVICE_NAME);
+      break;
   }
 
   while (1) {

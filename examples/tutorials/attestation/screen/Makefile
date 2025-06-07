@@ -3,7 +3,7 @@
 # Specify this directory relative to the current application.
 TOCK_USERLAND_BASE_DIR = ../../../../
 
-PACKAGE_NAME = org.tockos.tutorials.attestation.app-selector
+PACKAGE_NAME = org.tockos.tutorials.attestation.screen
 
 # Which files to compile.
 C_SRCS := $(wildcard *.c)

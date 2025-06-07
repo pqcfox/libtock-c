@@ -13,7 +13,7 @@ static void ipc_callback(__attribute__ ((unused)) int   pid,
 }
 
 int main(void) {
-  ipc_register_service_callback("org.tockos.tutorials.attestation.valid", ipc_callback,
+  ipc_register_service_callback("org.tockos.tutorials.attestation.compromised", ipc_callback,
                                 NULL);
 
   yield_for(&started);
