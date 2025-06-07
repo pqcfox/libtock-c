@@ -10,9 +10,15 @@
 #include <mui.h>
 #include <mui_u8g2.h>
 
+#define MIN(i, j) (((i) < (j)) ? (i) : (j))
+
 #define NO_SELECTED_APP            0
 #define VALID_ENCRYPTION_APP       1
 #define COMPROMISED_ENCRYPTION_APP 2
+
+#define LOG_NUM_LINES   4
+#define LOG_WIDTH       32
+#define LOG_LINE_HEIGHT 15
 
 const char VALID_ENCRYPTION_SERVICE_NAME[]       = "org.tockos.tutorials.attestation.valid";
 const char COMPROMISED_ENCRYPTION_SERVICE_NAME[] = "org.tockos.tutorials.attestation.compromised";
@@ -23,6 +29,10 @@ mui_t ui;
 bool    action            = false;
 uint8_t app_choice        = 0;
 size_t  app_start_service = -1;
+
+uint8_t log_head = 0;
+uint8_t log_size = 0;
+uint8_t log_buf[LOG_NUM_LINES][LOG_WIDTH];
 
 static uint8_t mui_hrule(mui_t* mui, uint8_t msg) {
   switch (msg) {
@@ -73,20 +83,41 @@ static void button_callback(
   }
 }
 
-static void ipc_callback(__attribute__ ((unused)) int pid,
+static void ipc_callback(int pid,
                          int len, 
                          int buf,
                          __attribute__ ((unused)) void* ud) {
 
-  // Prepare a null-terminated C string with the buffer contents.
-  uint8_t *c_str = malloc(len + 1);
-  memcpy(c_str, (uint8_t *)buf, len);
-  c_str[len] = '\0';
 
-  // Draw the string on the screen.
+  // Add message at the head of the log ring buffer.
+  memcpy(log_buf[log_head], (char *)buf, MIN(LOG_WIDTH - 1, len));
+  log_buf[log_head][LOG_WIDTH - 1] = '\0';
+
+
+  printf("Logging %s...\n", log_buf[log_head]);
+
+  // Move the ring buffer head along to the next line to write.
+  log_head = (log_head + 1) % LOG_NUM_LINES;
+
+  // Update the size of the ring buffer, so we print starting
+  // at the top of the screen.
+  if (log_size < LOG_NUM_LINES) log_size += 1;
+
+  // Clear the screen.
   u8g2_ClearBuffer(&u8g2);
-  u8g2_DrawStr(&u8g2, 20, 20, (const char *)c_str);
+
+  // Compute the index of the first log line to print (the "tail").
+  uint8_t log_tail = ((log_head - log_size) + LOG_NUM_LINES) % LOG_NUM_LINES;
+
+  // Draw the log entries on the screen, starting from the tail.
+  for (uint8_t i = 0; i < log_size; i++) {
+    uint8_t log_index = (log_tail + i) % LOG_NUM_LINES;
+    u8g2_DrawStr(&u8g2, 5, LOG_LINE_HEIGHT + i * LOG_LINE_HEIGHT, (const char *)log_buf[log_index]);
+  }
+
+  // Send the results.
   u8g2_SendBuffer(&u8g2);
+  ipc_notify_client(pid);
 }
 
 int enable_interrupts(void) {
