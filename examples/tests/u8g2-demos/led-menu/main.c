@@ -141,8 +141,16 @@ static void button_callback(
   __attribute__ ((unused)) returncode_t ret,
   int                                   btn_num,
   bool                                  val) {
+
+  // printf("BUTTON IS CHANGED THING\n");
+  
   if (data.debouncing) return;
+
+  // printf("HERE WE GOOOO\n");
+  
   start_debounce();
+
+  // printf("DEBOUNCE STARTED \n");
 
   if (val) {
     printf("b\n");
