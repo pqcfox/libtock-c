@@ -118,7 +118,7 @@ static void ipc_callback(int pid,
   ipc_notify_client(pid);
 }
 
-int enable_interrupts(void) {
+static int enable_interrupts(void) {
   returncode_t ret;
 
   // Enable interrupts on each button.
@@ -137,7 +137,7 @@ int enable_interrupts(void) {
   return 0;
 }
 
-int prompt_for_app_choice(void) {
+static int prompt_for_app_choice(void) {
   returncode_t ret;
 
   // Initialize the menu.
@@ -169,7 +169,7 @@ int prompt_for_app_choice(void) {
   return 0;
 }
 
-int start_encryption_app(const char* service) {
+static int start_encryption_app(const char* service) {
   returncode_t ret;
 
   // Discover the provided encryption app IPC service.

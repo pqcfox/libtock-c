@@ -29,11 +29,14 @@ static void ipc_callback(__attribute__ ((unused)) int   pid,
   started = true;
 }
 
-static void log_done_callback(int pid, int len, int arg2, void *ud) {
+static void log_done_callback(__attribute__ ((unused)) int   pid,
+                              __attribute__ ((unused)) int   len,
+                              __attribute__ ((unused)) int   arg2,
+                              __attribute__ ((unused)) void *ud) {
   log_done = true; 
 }
 
-void wait_for_start(void) {
+static void wait_for_start(void) {
   // Register an IPC callback and wait for it to be called by the
   // screen app based on the user's app selection.
   ipc_register_service_callback("org.tockos.tutorials.attestation.valid", ipc_callback,
@@ -41,7 +44,7 @@ void wait_for_start(void) {
   yield_for(&started);
 }
 
-int setup_logging() {
+static int setup_logging() {
   returncode_t ret;
   
   // Find the PID of the screen logging service
@@ -59,7 +62,7 @@ int setup_logging() {
   return 0;
 }
 
-int log_to_screen(const char *message) {
+static int log_to_screen(const char *message) {
   returncode_t ret;
 
   // Copy up to the log buffer's size of the message, with room for a null byte.
@@ -83,7 +86,7 @@ int log_to_screen(const char *message) {
   return 0;
 }
 
-size_t request_plaintext(uint8_t *plaintext, size_t size) {
+static size_t request_plaintext(uint8_t *plaintext, size_t size) {
   printf("Enter a plaintext to encrypt:\n");
   
   for (uint8_t i = 0; i < size; i++) {
@@ -110,7 +113,7 @@ size_t request_plaintext(uint8_t *plaintext, size_t size) {
   return size;
 }
 
-void bytes_to_hex(char *hex_chars, uint8_t *bytes, size_t bytes_len) {
+static void bytes_to_hex(char *hex_chars, uint8_t *bytes, size_t bytes_len) {
   char hex_byte[3];  
 
   for (uint8_t i = 0; i < bytes_len; i++) {
@@ -149,7 +152,7 @@ int main(void) {
 
     // Encrypt the plaintext.
     log_to_screen("Encrypting...");
-    int ret = oracle_encrypt(plaintext, plaintext_len, output, sizeof(output), iv);
+    ret = oracle_encrypt(plaintext, plaintext_len, output, sizeof(output), iv);
     if (ret < 0) {
       printf("ERROR(%i): %s.\r\n", ret, tock_strrcode(ret));
       printf("ERROR cannot encrypt key\r\n");
