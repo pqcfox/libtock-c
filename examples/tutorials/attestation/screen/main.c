@@ -16,9 +16,9 @@
 #define VALID_ENCRYPTION_APP       1
 #define COMPROMISED_ENCRYPTION_APP 2
 
-#define LOG_NUM_LINES   4
+#define LOG_NUM_LINES   6
 #define LOG_WIDTH       32
-#define LOG_LINE_HEIGHT 15
+#define LOG_LINE_HEIGHT 10
 
 const char VALID_ENCRYPTION_SERVICE_NAME[]       = "org.tockos.tutorials.attestation.valid";
 const char COMPROMISED_ENCRYPTION_SERVICE_NAME[] = "org.tockos.tutorials.attestation.compromised";
@@ -93,9 +93,6 @@ static void ipc_callback(int pid,
   memcpy(log_buf[log_head], (char *)buf, MIN(LOG_WIDTH - 1, len));
   log_buf[log_head][LOG_WIDTH - 1] = '\0';
 
-
-  printf("Logging %s...\n", log_buf[log_head]);
-
   // Move the ring buffer head along to the next line to write.
   log_head = (log_head + 1) % LOG_NUM_LINES;
 
@@ -103,8 +100,9 @@ static void ipc_callback(int pid,
   // at the top of the screen.
   if (log_size < LOG_NUM_LINES) log_size += 1;
 
-  // Clear the screen.
+  // Clear the screen and use smaller font.
   u8g2_ClearBuffer(&u8g2);
+  u8g2_SetFont(&u8g2, u8g2_font_squeezed_r6_tr);
 
   // Compute the index of the first log line to print (the "tail").
   uint8_t log_tail = ((log_head - log_size) + LOG_NUM_LINES) % LOG_NUM_LINES;
