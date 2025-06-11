@@ -87,27 +87,31 @@ static int log_to_screen(const char *message) {
 }
 
 static size_t request_plaintext(uint8_t *plaintext, size_t size) {
-  printf("Enter a plaintext to encrypt:\n");
+  char c;
+  int number_read, number_written;
+
+  printf("Enter a secret to encrypt:\n");
+
+  // Clear all leading whitespace left in the buffer.
+  do {
+    libtocksync_console_read((uint8_t *)&c, 1, &number_read);
+  } while (c == '\n' || c == '\r');
   
   for (uint8_t i = 0; i < size; i++) {
-    char c;
-    int number_read;
-  
-    // Fetch a character from input to add.
-    libtocksync_console_read((uint8_t*) &c, 1, &number_read);
-
-    // If we didn't read any characters, try reading again.
-    if (number_read == 0) {
-      continue;
-    }
-
     // Break on enter.
     if (c == '\n' || c == '\r') {
+      libtocksync_console_write((uint8_t *)"\n", 1, &number_written);
       return i;
     }
 
-    // Otherwise, record the output.
+    // Otherwise, echo the character.
+    libtocksync_console_write((uint8_t *)&c, 1, &number_written);
+
+    // Record the output.
     plaintext[i] = c;
+  
+    // Fetch a new character from input to add.
+    libtocksync_console_read((uint8_t *)&c, 1, &number_read);
   }
 
   return size;
@@ -169,6 +173,6 @@ int main(void) {
     bytes_to_hex(output_hex, output, 16);
     log_to_screen("Returning ciphertext:\n");
     log_to_screen(output_hex);
-    printf("Ciphertext: %s\n", output_hex);
+    printf("Ciphertext: %s\n\n", output_hex);
   }
 }
